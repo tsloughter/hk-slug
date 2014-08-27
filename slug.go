@@ -1,9 +1,14 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
+	"io"
+	"io/ioutil"
+	"path/filepath"
 	"fmt"
 	"os"
-	"path/filepath"
+	"log"
 
 	"github.com/naaman/slug"
 )
@@ -43,17 +48,64 @@ func main() {
 		os.Exit(0)
 	}
 
+	var err error
 	tarball := os.Args[1] // TODO: Maybe fallback to CWD or Git root?
 
-	fullPath, _ := filepath.Abs(tarball)
-	tar, _ := os.Open(fullPath)
 	app := os.Getenv("HKAPP")
 	apiKey := os.Getenv("HKPASS")
 
-	fmt.Println("Deploying...")
-	myslug := slug.NewSlug(apiKey, app, fullPath)
-	myslug.SetArchive(tar)
-	myslug.Push()
-	release := myslug.Release()
-	fmt.Printf("Done (v%d)\n", release.Version)
+	fmt.Println("Deploying... ")
+	dir := unpack(tarball)
+	s := slug.NewSlug(apiKey, app, dir)
+	tarFile := s.Archive()
+	fmt.Printf("done\nPushing %s... ", tarFile.Name())
+	err = s.Push()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Printf("done\n")
+	fmt.Printf("Releasing... ")
+	release := s.Release()
+	fmt.Printf("done (v%d)\n", release.Version)
+
+	fmt.Printf("Completed deploy of v%d\n", release.Version)
+}
+
+func unpack(tarball string) string {
+	gzipFile, _ := os.Open(tarball)
+	tarFile, _ := gzip.NewReader(gzipFile)
+	defer gzipFile.Close()
+
+	tr := tar.NewReader(tarFile)
+	slugDir, _ := ioutil.TempDir("", "slug")
+	// Iterate through the files in the archive.
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			// end of tar archive
+			break
+		}
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		newDir := slugDir + "/" + filepath.Dir(hdr.Name)
+		err = os.MkdirAll(newDir, os.ModeDir | 0766)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		newFile := newDir + "/" + filepath.Base(hdr.Name)
+		fo, err := os.Create(newFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fo.Chmod(hdr.FileInfo().Mode())
+		if _, err := io.Copy(fo, tr); err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	return slugDir
 }
