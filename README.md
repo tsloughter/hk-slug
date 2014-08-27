@@ -28,7 +28,7 @@ Make sure you have Go (only 1.3 has been tested) installed.
 
 ```sh-session
 $ go get github.com/tsloughter/hk-slug
-$ cd (go env GOPATH)/src/github.com/tsloughter/hk-slug
+$ cd $(go env GOPATH)/src/github.com/tsloughter/hk-slug
 $ go build
 $ mkdir -p /usr/local/lib/hk/plugin # or any custom $HKPATH
 $ mv ./hk-slug /usr/local/lib/hk/plugin/slug
