@@ -2,7 +2,8 @@
 
 # hk-slug
 
-A plugin to the fast Heroku CLI [`hk`](https://github.com/heroku/hk) for deploying via the [Heroku Slug API]().
+A plugin to the fast Heroku CLI [`hk`](https://github.com/heroku/hk) for deploying via
+the [Heroku Slug API](https://devcenter.heroku.com/articles/platform-api-deploying-slugs).
 
 Based on Bo Jeane's [hk-deploy](https://github.com/bjeanes/hk-deploy) and using Naaman's [slug](https://github.com/naaman/slug).
 
